@@ -12,7 +12,6 @@ meta = {
     'doc': 'MongoEngine JSON Schema Generator',
     'author': 'Yusuf Eroglu',
     'contact': 'yusuf.eroglu@btsgrp.com',
-    # 'homepage': 'https://btslabs.ai/',
 }
 
 REQUIREMENTS_FILE = os.getenv('REQUIREMENTS_FILE', 'requirements.txt')
@@ -47,14 +46,14 @@ setuptools.setup(
     author=meta['author'],
     author_email=meta['contact'],
     url=meta['homepage'],
-    license='Proprietary',
+    license='MIT',
     platforms=['any'],
     install_requires=install_requires(),
     python_requires=">=3.10",
     include_package_data=True,
     zip_safe=False,
     project_urls={
-        "Documentation": "https://github.com/symphonicityy/mongoengine-jsonschema/README.md",
+        "Documentation": "https://github.com/symphonicityy/mongoengine-jsonschema/blob/main/README.md",
         "Code": "https://github.com/symphonicityy/mongoengine-jsonschema",
     },
     classifiers=[
