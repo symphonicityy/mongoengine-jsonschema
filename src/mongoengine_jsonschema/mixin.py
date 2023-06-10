@@ -250,7 +250,7 @@ class JsonSchemaMixin:
                                             issubclass(cls, me.document.DynamicEmbeddedDocument) else False
         }
 
-        if JsonSchemaMixin in cls.__bases__ and JsonSchemaMixin in cls.__bases__[0].__bases__:
+        if JsonSchemaMixin in cls.__bases__[0].__bases__:
             schema['properties'] = schema['properties'] | cls.__bases__[0].json_schema(strict=cls._STRICT)['properties']
 
         if required_list and strict:

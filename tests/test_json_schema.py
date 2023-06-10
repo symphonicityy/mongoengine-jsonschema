@@ -101,72 +101,95 @@ class TestDocumentSchema:
 class TestDocumentSchemaProps:
     def test_string_field(self, schema):
         assert 'string_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_string_field_excluded(self, schema):
         assert 'string_field_excluded' not in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_int_field(self, schema):
         assert 'int_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_float_field(self, schema):
         assert 'float_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_boolean_field(self, schema):
         assert 'boolean_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_datetime_field(self, schema):
         assert 'datetime_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_embedded_document_field(self, schema):
         assert 'embedded_document_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_list_field(self, schema):
         assert 'list_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_dict_field(self, schema):
         assert 'dict_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_objectid_field(self, schema):
         assert 'objectid_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_reference_field(self, schema):
         assert 'reference_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_map_field(self, schema):
         assert 'map_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_decimal_field(self, schema):
         assert 'decimal_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_complex_datetime_field(self, schema):
         assert 'complex_datetime_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_url_field(self, schema):
         assert 'url_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_dynamic_field(self, schema):
         assert 'dynamic_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_generic_reference_field(self, schema):
         assert 'generic_reference_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_sorted_list_field(self, schema):
         assert 'sorted_list_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_email_field(self, schema):
         assert 'email_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_geo_point_field(self, schema):
         assert 'geo_point_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_sequence_field(self, schema):
         assert 'sequence_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_uuid_field(self, schema):
         assert 'uuid_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
     def test_generic_embedded_document_field(self, schema):
         assert 'generic_embedded_document_field' in schema['properties'].keys()
+        assert schema['properties']['']['type'] == ''
 
 
 class TestDocumentSchemaArgs:
