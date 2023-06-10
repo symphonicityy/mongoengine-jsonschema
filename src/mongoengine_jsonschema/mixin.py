@@ -21,7 +21,7 @@ TYPE_MAP = {
     'FileField': 'string',
     'FloatField': 'number',
     'GenericEmbeddedDocumentField': 'object',
-    'GenericReferenceField': 'string',
+    'GenericReferenceField': 'object',
     'GenericLazyReferenceField': 'string',
     'GeoPointField': 'array',
     'ImageField': 'string',
@@ -30,9 +30,9 @@ TYPE_MAP = {
     'LongField': 'integer',
     'MapField': 'object',
     'ObjectIdField': 'string',
-    'ReferenceField': 'string',
+    'ReferenceField': 'object',
     'LazyReferenceField': 'string',
-    'SequenceField': 'string',
+    'SequenceField': 'integer',
     'SortedListField': 'array',
     'StringField': 'string',
     'URLField': 'string',
@@ -125,7 +125,7 @@ class JsonSchemaMixin:
         return field_dict
 
     @classmethod
-    def _parse_embedded_doc_field(cls, doc: me.fields.EmbeddedDocumentField):
+    def _parse_embedded_doc_field(cls, doc: me.fields.EmbeddedDocumentField = None):
         """
         Generates JSON schema for given EmbeddedDocumentField and returns it. Make sure the embedded document
         class also inherits this mixin class (JsonSchemaMixin) or this method will return an empty dictionary.
@@ -137,13 +137,16 @@ class JsonSchemaMixin:
             dict
         """
 
+        if doc is None:
+            return {}
+
         try:
             return doc.document_type_obj.json_schema(strict=cls._STRICT)
         except AttributeError:
             return {}
 
     @classmethod
-    def _parse_reference_field(cls, doc: me.fields.ReferenceField) -> dict:
+    def _parse_reference_field(cls, doc: me.fields.ReferenceField = None) -> dict:
         """
         Returns JSON schema reference of given ReferenceField instance with '$ref'.
 
@@ -153,6 +156,9 @@ class JsonSchemaMixin:
         Returns:
             dict
         """
+
+        if doc is None:
+            return {}
 
         return {'$ref': f'/schemas/{doc.document_type_obj.__name__}'}
 
@@ -169,10 +175,12 @@ class JsonSchemaMixin:
         """
 
         field_dict = {'type': TYPE_MAP[type(field).__name__]}
-        if isinstance(getattr(field, 'field'), me.fields.EmbeddedDocumentField):
-            field_dict = {'type': 'array'} | {'items': cls._parse_embedded_doc_field(getattr(field, 'field'))}
-        elif isinstance(getattr(field, 'field'), me.fields.ReferenceField):
-            field_dict = {'type': 'array'} | {'items': cls._parse_reference_field(getattr(field, 'field'))}
+        if isinstance(getattr(field, 'field'), me.fields.EmbeddedDocumentField) or \
+                isinstance(getattr(field, 'field'), me.fields.GenericEmbeddedDocumentField):
+            field_dict = {'type': 'array'} | {'items': cls._parse_embedded_doc_field(getattr(field, 'field', None))}
+        elif isinstance(getattr(field, 'field'), me.fields.ReferenceField) or \
+                isinstance(getattr(field, 'field'), me.fields.GenericReferenceField):
+            field_dict = {'type': 'array'} | {'items': cls._parse_reference_field(getattr(field, 'field', None))}
         elif isinstance(getattr(field, 'field'), me.base.BaseField):
             field_dict['items'] = {'type': TYPE_MAP[type(getattr(field, 'field')).__name__]}
 
