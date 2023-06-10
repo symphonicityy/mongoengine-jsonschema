@@ -11,14 +11,15 @@ meta = {
     'version': VERSION,
     'doc': 'MongoEngine JSON Schema Generator',
     'author': 'Yusuf Eroglu',
-    'contact': 'yusuf.eroglu@btsgrp.com',
+    'contact': 'myusuferoglu@gmail.com',
+    'homepage': "https://github.com/symphonicityy/mongoengine-jsonschema"
 }
 
 REQUIREMENTS_FILE = os.getenv('REQUIREMENTS_FILE', 'requirements.txt')
 
 
-def _strip_comments(l):
-    return l.split('#', 1)[0].strip()
+def _strip_comments(line):
+    return line.split('#', 1)[0].strip()
 
 
 def _pip_requirement(req):
@@ -31,7 +32,7 @@ def _pip_requirement(req):
 def reqs(*f):
     """Parse requirement file."""
     return [
-        _pip_requirement(r) for r in (_strip_comments(l) for l in open(*f).readlines()) if r]
+        _pip_requirement(r) for r in (_strip_comments(line) for line in open(*f).readlines()) if r]
 
 
 def install_requires():
@@ -57,9 +58,15 @@ setuptools.setup(
         "Code": "https://github.com/symphonicityy/mongoengine-jsonschema",
     },
     classifiers=[
-        "Development Status :: 5 - Production/Stable",
+        "Development Status :: 3 - Alpha",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.10",
-        "Operating System :: OS Independent"
+        "Operating System :: OS Independent",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Topic :: File Formats :: JSON",
+        "Topic :: File Formats :: JSON :: JSON Schema",
+        "Topic :: Software Development :: Code Generators",
+        "Topic :: Database"
     ]
 )
