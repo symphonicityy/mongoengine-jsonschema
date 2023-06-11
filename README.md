@@ -37,16 +37,24 @@ Person.json_schema()
 which returns the schema as a Python dictionary
 ```python
 {
-    "$id": "/schemas/Person",
-    "additionalProperties": False,
-    "properties": {
-        "name": {
-            "title": "Name",
-            "type": "string"
+    '$id': '/schemas/Person',
+    'title': 'Person',
+    'type': 'object',
+    'properties': {
+        'age': {
+            'type': 'integer',
+            'title': 'Age',
+            'minimum': 0
+        },
+        'name': {
+            'type': 'string',
+            'title': 'Name',
+            'minLength': 1,
+            'maxLength': 32
         }
     },
-    "title": "Person",
-    "type": "object"
+    'required': ['name'],
+    'additionalProperties': False
 }
 ```
 
