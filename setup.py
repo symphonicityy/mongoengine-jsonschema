@@ -1,13 +1,15 @@
 import os
 import setuptools
+from pathlib import Path
+
 
 NAME = 'mongoengine-jsonschema'
 
 with open('VERSION', 'r') as f:
     VERSION = f.readline().strip('\n')
 
-with open('README.md', 'r') as f:
-    DESCRIPTION = f.read()
+this_directory = Path(__file__).parent
+DESCRIPTION = (this_directory / "README.md").read_text()
 
 meta = {
     'version': VERSION,
