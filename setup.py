@@ -1,11 +1,15 @@
 import os
 import setuptools
+from pathlib import Path
 
 
 NAME = 'mongoengine-jsonschema'
 
 with open('VERSION', 'r') as f:
     VERSION = f.readline().strip('\n')
+
+this_directory = Path(__file__).parent
+DESCRIPTION = (this_directory / "README.md").read_text()
 
 meta = {
     'version': VERSION,
@@ -44,12 +48,16 @@ setuptools.setup(
     name=NAME,
     version=meta['version'],
     description=meta['doc'],
+    long_description=DESCRIPTION,
+    long_description_content_type='text/markdown',
     author=meta['author'],
     author_email=meta['contact'],
     url=meta['homepage'],
     license='MIT',
     platforms=['any'],
     install_requires=install_requires(),
+    package_dir={'': 'src'},
+    packages=setuptools.find_packages('src'),
     python_requires=">=3.10",
     include_package_data=True,
     zip_safe=False,
