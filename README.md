@@ -65,6 +65,7 @@ Check out [example.md](https://github.com/symphonicityy/mongoengine-jsonschema/b
 - Inheritance is supported. Make sure you add mixin to parent class.
 - `additionalProperties` is set to `False` for `DynamicDocument` and `DynamicEmbeddedDocument` classes.
 - `required` keyword can be removed by setting `strict` argument to `False` (`.json_schema(strict=False)`). This is useful for partial validation, e.g. when updating documents using HTTP PATCH method.
+- Constraints for special `StringField` types such as `EmailField`, `URLField`, `UUIDField`, `DateTimeField` etc. are applied to schema using `format` and/or `pattern` keywords.
 - Fields derived from `GeoJsonBaseField` can be validated for both array and object types as supported by MongoEngine.
 - Field arguments/constraints `required`, `min_length`, `max_length`, `min_value`, `max_value`, `default`, `choices`, `regex` and `url_regex` (for `URLField`) are supported and reflected to schema.
 - Excluding a field from schema is possible with setting field argument `exclude_from_schema` to `True`. Example: 
