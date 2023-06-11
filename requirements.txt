@@ -2,3 +2,4 @@ mongoengine
 pytest
 mongomock
 jsonschema
+blinker

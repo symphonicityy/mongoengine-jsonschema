@@ -4,9 +4,9 @@ name: Test and publish Python package
 
 on:
   push:
-    branches: [ "stable" ]
+    branches: [ "release" ]
   pull_request:
-    branches: [ "stable" ]
+    branches: [ "release" ]
 
 jobs:
   build:

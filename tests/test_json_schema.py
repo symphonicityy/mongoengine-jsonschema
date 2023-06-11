@@ -1,6 +1,6 @@
 from enum import Enum
-
 import pytest
+
 import mongoengine as me
 from mongoengine_jsonschema import JsonSchemaMixin
 import mongomock
@@ -58,9 +58,9 @@ class ExampleDocument(me.Document, JsonSchemaMixin):
     date_field = me.DateField()
     decimal_field = me.DecimalField()
     dict_field = me.DictField()
-    dynamic_field = me.DynamicField()
+    dynamic_field = me.DynamicField(default=1)
     email_field = me.EmailField()
-    embedded_document_field = me.EmbeddedDocumentField(ExampleEmbeddedDocument, default={'embedded_field': '1'})
+    embedded_document_field = me.EmbeddedDocumentField(ExampleEmbeddedDocument)
     embedded_document_list_field = me.EmbeddedDocumentListField(ExampleEmbeddedDocument)
     enum_field = me.EnumField(ChoiceEnum)
     float_field = me.FloatField()
@@ -96,7 +96,48 @@ def example_schema():
 
 @pytest.fixture
 def example_json():
-    return {}
+    return {
+        'boolean_field': True,
+        'datetime_field': '2018-11-13 20:20:39',
+        'date_field': '2018-11-13',
+        'decimal_field': 1.1,
+        'dict_field': {'A': 1},
+        'dynamic_field': 'example',
+        'email_field': 'example@example.com',
+        'embedded_document_field': {'embedded_field': 'A'},
+        'embedded_document_list_field': [{'embedded_field': 'A'}],
+        'enum_field': '1',
+        'float_field': 1.1,
+        'generic_embedded_document_field': {'embedded_field': 'A',
+                                            '_cls': 'ExampleEmbeddedDocument'},
+        'geo_point_field': [1, 2],
+        'int_field': 1,
+        'line_string_field': {'type': 'LineString',
+                              'coordinates': [[1, 2], [3, 4], [5, 6], [1, 2]]},
+        'list_field': ['1', '2'],
+        'long_field': 1,
+        'map_field': {'A': 1},
+        'multi_line_string_field': {'type': 'MultiLineString',
+                                    'coordinates': [[[1, 2], [3, 4], [5, 6], [1, 2]],
+                                                    [[7, 8], [9, 10], [11, 12], [7, 8]]]},
+        'multi_point_field': [[1, 2], [3, 4]],
+        'multi_polygon_field': [[[[1, 2], [3, 4], [5, 6], [1, 2]],
+                                 [[7, 8], [9, 10], [11, 12], [7, 8]]],
+                                [[[1, 2], [3, 4], [5, 6], [1, 2]],
+                                 [[7, 8], [9, 10], [11, 12], [7, 8]]]
+                                ],
+        'object_ID_field': '507f191e810c19729de860ea',
+        'point_field': {'type': 'Point',
+                        'coordinates': [1, 2]},
+        'polygon_field': {'type': 'Polygon',
+                          'coordinates': [[[1, 2], [3, 4], [5, 6], [1, 2]],
+                                          [[7, 8], [9, 10], [11, 12], [7, 8]]]},
+        'sequence_field': 1,
+        'sorted_list_field': [1, 2, 3],
+        'string_field': '1',
+        'URL_field': 'https://localhost:5000/api/',
+        'UUID_field': '3e4666bf-d5e5-4aa7-b8ce-cefe41c7568a'
+    }
 
 
 class TestDocumentSchema:
@@ -148,6 +189,7 @@ class TestDocumentSchemaProps:
     def test_embedded_document_list_field(self, example_schema):
         assert example_schema['properties']['embedded_document_list_field'] == {
             'type': 'array',
+            'title': 'Embedded Document List Field',
             'items': {
                 '$id': '/schemas/ExampleEmbeddedDocument',
                 'title': 'Example Embedded Document',
@@ -155,6 +197,7 @@ class TestDocumentSchemaProps:
                 'type': 'object',
                 'properties': {
                     'embedded_field': {
+                        'title': 'Embedded Field',
                         'type': 'string'
                     }
                 }
@@ -176,6 +219,7 @@ class TestDocumentSchemaProps:
             'anyOf': [
                 {
                     'type': 'object',
+                    'title': 'Line String Field',
                     'properties': {
                         'type': {
                             'type': 'string',
@@ -204,6 +248,7 @@ class TestDocumentSchemaProps:
                 },
                 {
                     'type': 'array',
+                    'title': 'Line String Field',
                     'items': {
                         'type': 'array',
                         'prefixItems': [
@@ -232,6 +277,7 @@ class TestDocumentSchemaProps:
             'anyOf': [
                 {
                     'type': 'object',
+                    'title': 'Multi Line String Field',
                     'properties': {
                         'type': {
                             'type': 'string',
@@ -263,6 +309,7 @@ class TestDocumentSchemaProps:
                 },
                 {
                     'type': 'array',
+                    'title': 'Multi Line String Field',
                     'items': {
                         'type': 'array',
                         'items': {
@@ -291,6 +338,7 @@ class TestDocumentSchemaProps:
             'anyOf': [
                 {
                     'type': 'object',
+                    'title': 'Multi Point Field',
                     'properties': {
                         'type': {
                             'type': 'string',
@@ -319,6 +367,7 @@ class TestDocumentSchemaProps:
                 },
                 {
                     'type': 'array',
+                    'title': 'Multi Point Field',
                     'items': {
                         'type': 'array',
                         'prefixItems': [
@@ -344,6 +393,7 @@ class TestDocumentSchemaProps:
             'anyOf': [
                 {
                     'type': 'object',
+                    'title': 'Multi Polygon Field',
                     'properties': {
                         'type': {
                             'type': 'string',
@@ -378,6 +428,7 @@ class TestDocumentSchemaProps:
                 },
                 {
                     'type': 'array',
+                    'title': 'Multi Polygon Field',
                     'items': {
                         'type': 'array',
                         'items': {
@@ -409,6 +460,7 @@ class TestDocumentSchemaProps:
             'anyOf': [
                 {
                     'type': 'object',
+                    'title': 'Point Field',
                     'properties': {
                         'type': {
                             'type': 'string',
@@ -434,6 +486,7 @@ class TestDocumentSchemaProps:
                 },
                 {
                     'type': 'array',
+                    'title': 'Point Field',
                     'prefixItems': [
                         {
                             'type': 'number',  # longitude
@@ -456,6 +509,7 @@ class TestDocumentSchemaProps:
             'anyOf': [
                 {
                     'type': 'object',
+                    'title': 'Polygon Field',
                     'properties': {
                         'type': {
                             'type': 'string',
@@ -487,6 +541,7 @@ class TestDocumentSchemaProps:
                 },
                 {
                     'type': 'array',
+                    'title': 'Polygon Field',
                     'items': {
                         'type': 'array',
                         'items': {
@@ -572,7 +627,8 @@ class TestDocumentSchemaProps:
         assert 'URL_field' in example_schema['properties'].keys()
         assert example_schema['properties']['URL_field']['type'] == 'string'
         assert example_schema['properties']['URL_field']['format'] == 'uri'
-        assert example_schema['properties']['URL_field']['pattern'] == '^https?://'
+        assert example_schema['properties']['URL_field'][
+                   'pattern'] == '^(?:[a-z0-9\\.\\-]*)://(?:(?:[A-Z0-9](?:[A-Z0-9-_]{0,61}[A-Z0-9])?\\.)+(?:[A-Z]{2,6}\\.?|[A-Z0-9-]{2,}(?<!-)\\.?)|localhost|\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|\\[?[A-F0-9]*:[A-F0-9:]+\\]?)(?::\\d+)?(?:/?|[/?]\\S+)$'
 
     def test_dynamic_field(self, example_schema):
         assert 'dynamic_field' in example_schema['properties'].keys()
@@ -595,6 +651,7 @@ class TestDocumentSchemaProps:
         assert 'geo_point_field' in example_schema['properties'].keys()
         assert example_schema['properties']['geo_point_field'] == {
             'type': 'array',
+            'title': 'Geo Point Field',
             'prefixItems': [
                 {
                     'type': 'number',  # longitude
@@ -622,13 +679,13 @@ class TestDocumentSchemaProps:
     def test_generic_embedded_document_field(self, example_schema):
         assert 'generic_embedded_document_field' in example_schema['properties'].keys()
         assert example_schema['properties']['generic_embedded_document_field'] == {
-            'type': 'object'
+            'type': 'object',
+            'title': 'Generic Embedded Document Field'
         }
 
 
 class TestDocumentSchemaArgs:
     def test_default(self, example_schema):
-        assert example_schema['properties']['embedded_document_field']['default'] == {'embedded_field': '1'}
         assert example_schema['properties']['string_field']['default'] == '1'
 
     def test_min_length(self, example_schema):
@@ -638,10 +695,10 @@ class TestDocumentSchemaArgs:
         assert example_schema['properties']['string_field']['maxLength'] == 2
 
     def test_min_value(self, example_schema):
-        assert example_schema['properties']['int_field']['minValue'] == 0
+        assert example_schema['properties']['int_field']['minimum'] == 0
 
     def test_max_value(self, example_schema):
-        assert example_schema['properties']['int_field']['maxValue'] == 5
+        assert example_schema['properties']['int_field']['maximum'] == 5
 
     def test_choices(self, example_schema):
         assert example_schema['properties']['string_field']['enum'] == ['1', '2', '3']

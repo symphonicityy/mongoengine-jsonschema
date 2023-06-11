@@ -4,6 +4,7 @@ import re
 import mongoengine as me
 import mongoengine.base
 
+
 TYPE_MAP = {
     'BinaryField': 'string',
     'BooleanField': 'boolean',
@@ -90,7 +91,7 @@ class JsonSchemaMixin:
     def _add_title(cls, name: str, prop: dict) -> dict:
         """
         Returns property JSON with title.
-        
+
         Args:
             name(str): Name given to field
             prop(dict): Generated property JSON
@@ -99,7 +100,7 @@ class JsonSchemaMixin:
             dict
         """
 
-        return prop | {'title': cls._get_title(name)}
+        return {**prop, 'title': cls._get_title(name)}
 
     @classmethod
     def _parse_special_fields(cls, field: me.fields.BaseField) -> dict:
@@ -122,19 +123,18 @@ class JsonSchemaMixin:
         elif isinstance(field, me.fields.EmailField):
             return {'format': 'email'}
 
-        elif isinstance(field, (me.fields.DateTimeField, me.fields.ComplexDateTimeField)):
-            return {'format': 'date-time'}
-
         elif isinstance(field, me.fields.DateField):
             return {'format': 'date'}
 
+        elif isinstance(field, (me.fields.DateTimeField, me.fields.ComplexDateTimeField)):
+            return {'format': 'date-time'}
+
         elif isinstance(field, me.fields.URLField):
-            return {'format': 'uri',
-                    'pattern': '^https?://'}
+            return {'format': 'uri'}
 
         elif isinstance(field, me.fields.EnumField):
-            _field = getattr(field, 'field', None)
-            return {'choices': [e.value for e in _field]}
+            _field = getattr(field, 'choices', None)
+            return {'enum': [e.value for e in _field]}
 
         elif isinstance(field, me.fields.MapField):
             _field = getattr(field, 'field', None)
@@ -159,12 +159,17 @@ class JsonSchemaMixin:
         """
         _type = TYPE_MAP.get(type(field).__name__, None)
         field_dict = {'type': _type} if _type is not None else {}
-        field_dict |= cls._parse_special_fields(field)
+        _parsed_special = cls._parse_special_fields(field)
+        if _parsed_special is not None:
+            field_dict = {**field_dict, **_parsed_special}
 
         for k, v in ATTR_MAP.items():
             _val = getattr(field, k, None)
+            if isinstance(field, me.fields.EnumField) and k == 'choices':
+                continue
             if _val is not None:
                 field_dict[v] = _val
+
         if 'pattern' in field_dict.keys() and field_dict['pattern'] is not None:
             field_dict['pattern'] = field_dict['pattern'].pattern
 
@@ -175,14 +180,14 @@ class JsonSchemaMixin:
         return field_dict
 
     @classmethod
-    def _parse_embedded_doc_field(cls,
-                                  field: me.fields.EmbeddedDocumentField | me.fields.GenericEmbeddedDocumentField = None):
+    def _parse_embedded_doc_field(cls, field: typing.Union[me.fields.EmbeddedDocumentField,
+                                                           me.fields.GenericEmbeddedDocumentField] = None):
         """
         Generates JSON schema for given EmbeddedDocumentField and returns it. Make sure the embedded document
         class also inherits this mixin class (JsonSchemaMixin) or this method will return an empty dictionary.
 
         Args:
-            field(me.fields.EmbeddedDocumentField | me.fields.GenericEmbeddedDocumentField):
+            field(typing.Union[me.fields.EmbeddedDocumentField, me.fields.GenericEmbeddedDocumentField]):
                 A MongoEngine EmbeddedDocumentField instance
 
         Returns:
@@ -223,6 +228,7 @@ class JsonSchemaMixin:
             'anyOf': [
                 {
                     'type': 'object',
+                    'title': cls._get_title(getattr(field, 'name', '')),
                     'properties': {
                         'type': {
                             'type': 'string',
@@ -231,7 +237,7 @@ class JsonSchemaMixin:
                         'coordinates': _coord_prop
                     }
                 },
-                _coord_prop
+                {**_coord_prop, 'title': cls._get_title(getattr(field, 'name', ''))}
             ]
         }
 
@@ -268,7 +274,7 @@ class JsonSchemaMixin:
             }
 
         _prop['anyOf'][0]['properties']['coordinates'] = _coord_prop
-        _prop['anyOf'][1] = _coord_prop
+        _prop['anyOf'][1] = {**_coord_prop, 'title': cls._get_title(getattr(field, 'name', ''))}
         return _prop
 
     @classmethod
@@ -321,16 +327,16 @@ class JsonSchemaMixin:
                 continue
 
             if isinstance(value, (me.fields.EmbeddedDocumentField, me.fields.GenericEmbeddedDocumentField)):
-                model_dict = model_dict | {key: cls._add_title(key, cls._parse_embedded_doc_field(value))}
+                model_dict = {**model_dict, key: cls._add_title(key, cls._parse_embedded_doc_field(value))}
 
             elif isinstance(value, me.fields.ListField):
-                model_dict = model_dict | {key: cls._add_title(key, cls._parse_list_field(value))}
+                model_dict = {**model_dict, key: cls._add_title(key, cls._parse_list_field(value))}
 
             elif isinstance(value, me.base.GeoJsonBaseField):
-                model_dict = model_dict | {key: cls._add_title(key, cls._parse_geo_field(value))}
+                model_dict = {**model_dict, key: cls._parse_geo_field(value)}
 
             elif isinstance(value, me.base.BaseField):
-                model_dict = model_dict | {key: cls._add_title(key, cls._parse_field(value))}
+                model_dict = {**model_dict, key: cls._add_title(key, cls._parse_field(value))}
 
         return model_dict
 
@@ -370,7 +376,8 @@ class JsonSchemaMixin:
         }
 
         if JsonSchemaMixin in cls.__bases__[0].__bases__:
-            schema['properties'] = schema['properties'] | cls.__bases__[0].json_schema(strict=cls._STRICT)['properties']
+            schema['properties'] = {**schema['properties'],
+                                    **cls.__bases__[0].json_schema(strict=cls._STRICT)['properties']}
 
         if required_list and strict:
             schema['required'] = required_list
