@@ -2,7 +2,9 @@ import os
 import setuptools
 
 NAME = 'mongoengine-jsonschema'
-VERSION = '0.1.0'
+
+with open('VERSION', 'r') as f:
+    VERSION = f.readline().strip('\n')
 
 meta = {
     'version': VERSION,
