@@ -1,5 +1,6 @@
 from enum import Enum
 import pytest
+from importlib.metadata import version
 
 import mongoengine as me
 from mongoengine_jsonschema import JsonSchemaMixin
@@ -732,10 +733,14 @@ class TestValidation:
             assert False, f"JSON schema validation failed. {str(e)}"
 
     def test_mongoengine_validation(self, example_json):
-        try:
+        me_version = version('mongoengine')
+        if me_version < '0.27.0':
+            me.connect('mongoenginetest', host='mongomock://localhost', alias='default')
+        else:
             me.connect('mongoenginetest', host='mongodb://localhost', mongo_client_class=mongomock.MongoClient,
                        alias='default')
-            conn = me.get_connection('default')
+        conn = me.get_connection('default')
+        try:
             ExampleDocument(**example_json).validate()
         except me.ValidationError as e:
             assert False, f"Mongoengine validation failed. {str(e)}"
