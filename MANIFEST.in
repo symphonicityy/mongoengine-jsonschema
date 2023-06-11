@@ -1,1 +1,1 @@
-include VERSION requirements.txt
+include VERSION requirements.txt README.md
