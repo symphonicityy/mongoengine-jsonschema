@@ -1,7 +1,6 @@
 import os
 import setuptools
 
-
 NAME = 'mongoengine-jsonschema'
 
 with open('VERSION', 'r') as f:
@@ -50,7 +49,8 @@ setuptools.setup(
     license='MIT',
     platforms=['any'],
     install_requires=install_requires(),
-    packages=['src/mongoengine_jsonschema'],
+    package_dir={'': 'src'},
+    packages=setuptools.find_packages('src'),
     python_requires=">=3.10",
     include_package_data=True,
     zip_safe=False,
