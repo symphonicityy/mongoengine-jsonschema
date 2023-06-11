@@ -4,45 +4,32 @@ import re
 import mongoengine as me
 import mongoengine.base
 
-
 TYPE_MAP = {
     'BinaryField': 'string',
     'BooleanField': 'boolean',
     'CachedReferenceField': 'string',
     'ComplexDateTimeField': 'string',
+    'DateField': 'string',
     'DateTimeField': 'string',
+    'Decimal128Field': 'number',
     'DecimalField': 'number',
     'DictField': 'object',
-    'DynamicField': 'string',
     'EmailField': 'string',
-    'EmbeddedDocumentField': 'object',
-    'EmbeddedDocumentListField': 'array',
     'EnumField': 'string',
-    'FileField': 'string',
     'FloatField': 'number',
-    'GenericEmbeddedDocumentField': 'object',
-    'GenericReferenceField': 'object',
+    'GenericReferenceField': 'string',
     'GenericLazyReferenceField': 'string',
     'GeoPointField': 'array',
-    'ImageField': 'string',
     'IntField': 'integer',
-    'ListField': 'array',
     'LongField': 'integer',
     'MapField': 'object',
     'ObjectIdField': 'string',
-    'ReferenceField': 'object',
+    'ReferenceField': 'string',
     'LazyReferenceField': 'string',
     'SequenceField': 'integer',
-    'SortedListField': 'array',
     'StringField': 'string',
     'URLField': 'string',
     'UUIDField': 'string',
-    'PointField': 'object',
-    'LineStringField': 'object',
-    'PolygonField': 'object',
-    'MultiPointField': 'object',
-    'MultiLineStringField': 'object',
-    'MultiPolygonField': 'object'
 }
 
 ATTR_MAP = {'required': 'required',
@@ -52,7 +39,25 @@ ATTR_MAP = {'required': 'required',
             'min_length': 'minLength',
             'max_length': 'maxLength',
             'choices': 'enum',
-            'regex': 'pattern'}
+            'regex': 'pattern',
+            'url_regex': 'pattern'}
+
+POINT_PROP = {
+    'type': 'array',
+    'prefixItems': [
+        {
+            'type': 'number',  # longitude
+            'min_value': -180,
+            'max_value': 180
+        },
+        {
+            'type': 'number',  # latitude
+            'min_value': -90,
+            'max_value': 90
+        }
+    ],
+    'items': False
+}
 
 
 class JsonSchemaMixin:
@@ -97,6 +102,51 @@ class JsonSchemaMixin:
         return prop | {'title': cls._get_title(name)}
 
     @classmethod
+    def _parse_special_fields(cls, field: me.fields.BaseField) -> dict:
+        """
+        Returns field specific JSON schema keywords.
+
+        Args:
+            field(me.fields.BaseField): An instance of any MongoEngine base field.
+
+        Returns:
+            dict
+        """
+
+        if isinstance(field, me.fields.GeoPointField):
+            return POINT_PROP
+
+        elif isinstance(field, me.fields.UUIDField):
+            return {'format': 'uuid'}
+
+        elif isinstance(field, me.fields.EmailField):
+            return {'format': 'email'}
+
+        elif isinstance(field, (me.fields.DateTimeField, me.fields.ComplexDateTimeField)):
+            return {'format': 'date-time'}
+
+        elif isinstance(field, me.fields.DateField):
+            return {'format': 'date'}
+
+        elif isinstance(field, me.fields.URLField):
+            return {'format': 'uri',
+                    'pattern': '^https?://'}
+
+        elif isinstance(field, me.fields.EnumField):
+            _field = getattr(field, 'field', None)
+            return {'choices': [e.value for e in _field]}
+
+        elif isinstance(field, me.fields.MapField):
+            _field = getattr(field, 'field', None)
+            _field_type = TYPE_MAP.get(type(_field).__name__, None)
+
+            if None not in (_field, _field_type):
+                return {'patternProperties': {
+                    ".*": {"type": TYPE_MAP.get(type(_field).__name__, None)}
+                }
+                }
+
+    @classmethod
     def _parse_field(cls, field: me.fields.BaseField) -> dict:
         """
         Generates property JSON by parsing MongoEngine field's arguments and returns it.
@@ -107,17 +157,17 @@ class JsonSchemaMixin:
         Returns:
             dict
         """
+        _type = TYPE_MAP.get(type(field).__name__, None)
+        field_dict = {'type': _type} if _type is not None else {}
+        field_dict |= cls._parse_special_fields(field)
 
-        field_dict = {'type': TYPE_MAP[type(field).__name__]}
         for k, v in ATTR_MAP.items():
-            try:
-                _val = getattr(field, k)
-            except AttributeError:
-                continue
+            _val = getattr(field, k, None)
             if _val is not None:
                 field_dict[v] = _val
         if 'pattern' in field_dict.keys() and field_dict['pattern'] is not None:
             field_dict['pattern'] = field_dict['pattern'].pattern
+
         if 'default' in field_dict.keys() and isinstance(getattr(field, 'default'), typing.Callable):
             field_dict['default'] = [] if type(field) == me.fields.ListField else {}
 
@@ -125,71 +175,136 @@ class JsonSchemaMixin:
         return field_dict
 
     @classmethod
-    def _parse_embedded_doc_field(cls, doc: me.fields.EmbeddedDocumentField = None):
+    def _parse_embedded_doc_field(cls,
+                                  field: me.fields.EmbeddedDocumentField | me.fields.GenericEmbeddedDocumentField = None):
         """
         Generates JSON schema for given EmbeddedDocumentField and returns it. Make sure the embedded document
         class also inherits this mixin class (JsonSchemaMixin) or this method will return an empty dictionary.
 
         Args:
-            doc(me.fields.EmbeddedDocumentField): A MongoEngine EmbeddedDocumentField instance
+            field(me.fields.EmbeddedDocumentField | me.fields.GenericEmbeddedDocumentField):
+                A MongoEngine EmbeddedDocumentField instance
 
         Returns:
             dict
         """
 
-        if doc is None:
+        if field is None:
             return {}
 
+        elif isinstance(field, me.fields.GenericEmbeddedDocumentField):
+            return {
+                'type': 'object'
+            }
+
         try:
-            return doc.document_type_obj.json_schema(strict=cls._STRICT)
+            return field.document_type_obj.json_schema(strict=cls._STRICT)
         except AttributeError:
             return {}
 
     @classmethod
-    def _parse_reference_field(cls, doc: me.fields.ReferenceField = None) -> dict:
+    def _parse_geo_field(cls, field: me.base.GeoJsonBaseField = None) -> dict:
         """
-        Returns JSON schema reference of given ReferenceField instance with '$ref'.
+        Returns JSON schema reference of given GeoJsonBaseField instance. All geo JSON fields can be defined in JSON
+        as both arrays and objects, therefore schema is defined with 'anyOf' keyword.
 
         Args:
-            doc(me.document.Document): A MongoEngine ReferenceField instance
+            field(me.base.GeoJsonBaseField): A MongoEngine GeoJsonBaseField instance
 
         Returns:
             dict
         """
 
-        if doc is None:
+        if field is None:
             return {}
 
-        return {'$ref': f'/schemas/{doc.document_type_obj.__name__}'}
+        _coord_prop = POINT_PROP
+        _prop = {
+            'anyOf': [
+                {
+                    'type': 'object',
+                    'properties': {
+                        'type': {
+                            'type': 'string',
+                            'enum': ['Point']
+                        },
+                        'coordinates': _coord_prop
+                    }
+                },
+                _coord_prop
+            ]
+        }
+
+        if isinstance(field, (me.fields.LineStringField, me.fields.MultiPointField)):
+            _prop['anyOf'][0]['properties']['type']['enum'] = ['LineString'] \
+                if isinstance(field, me.fields.LineStringField) else ['MultiPoint']
+            _coord_prop = {
+                'type': 'array',
+                'items': POINT_PROP
+            }
+
+        elif isinstance(field, (me.fields.PolygonField, me.fields.MultiLineStringField)):
+            _prop['anyOf'][0]['properties']['type']['enum'] = ['Polygon'] \
+                if isinstance(field, me.fields.PolygonField) else ['MultiLineString']
+            _coord_prop = {
+                'type': 'array',
+                'items': {
+                    'type': 'array',
+                    'items': POINT_PROP
+                }
+            }
+
+        elif isinstance(field, me.fields.MultiPolygonField):
+            _prop['anyOf'][0]['properties']['type']['enum'] = ['MultiPolygon']
+            _coord_prop = {
+                'type': 'array',
+                'items': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'array',
+                        'items': POINT_PROP
+                    }
+                }
+            }
+
+        _prop['anyOf'][0]['properties']['coordinates'] = _coord_prop
+        _prop['anyOf'][1] = _coord_prop
+        return _prop
 
     @classmethod
-    def _parse_list_field(cls, field: me.fields.BaseField) -> dict:
+    def _parse_list_field(cls, field: me.fields.ListField) -> dict:
         """
         Generates JSON schema for given list field and returns it.
 
         Args:
-            field(me.fields.BaseField): An instance of a MongoEngine ListField.
+            field(me.fields.ListField): An instance of a MongoEngine ListField.
 
         Returns:
             dict
         """
 
-        field_dict = {'type': TYPE_MAP[type(field).__name__]}
-        if isinstance(getattr(field, 'field'), me.fields.EmbeddedDocumentField) or \
-                isinstance(getattr(field, 'field'), me.fields.GenericEmbeddedDocumentField):
-            field_dict = {'type': 'array'} | {'items': cls._parse_embedded_doc_field(getattr(field, 'field', None))}
-        elif isinstance(getattr(field, 'field'), me.fields.ReferenceField) or \
-                isinstance(getattr(field, 'field'), me.fields.GenericReferenceField):
-            field_dict = {'type': 'array'} | {'items': cls._parse_reference_field(getattr(field, 'field', None))}
-        elif isinstance(getattr(field, 'field'), me.base.BaseField):
-            field_dict['items'] = {'type': TYPE_MAP[type(getattr(field, 'field')).__name__]}
+        _field = getattr(field, 'field', None)
+        field_dict = {'type': 'array'}
+
+        if getattr(field, 'required', False):
+            field_dict['minItems'] = 1
+
+        if isinstance(_field, (me.fields.EmbeddedDocumentField, me.fields.GenericEmbeddedDocumentField)):
+            field_dict['items'] = cls._parse_embedded_doc_field(_field)
+
+        elif isinstance(_field, me.base.GeoJsonBaseField):
+            field_dict['items'] = cls._parse_geo_field(_field)
+
+        elif isinstance(_field, me.base.BaseField):
+            field_dict['items'] = {'type': TYPE_MAP.get(type(_field).__name__, 'string')}
 
         return field_dict
 
     @classmethod
     def _parse(cls) -> dict:
         """
-        Parses the MongoEngine document model and its fields. Generates and returns JSON schema for document.
+        Parses the MongoEngine document model and its fields. Generates and returns JSON schema for document. Fields
+        are split into four categories: embedded document fields, list fields, geo JSON fields and base fields.
 
         Returns:
             dict
@@ -204,12 +319,16 @@ class JsonSchemaMixin:
                                 'MultipleObjectsReturned'] and
                     value is not None and not getattr(value, 'exclude_from_schema', False)):
                 continue
-            if isinstance(value, me.fields.EmbeddedDocumentField):
+
+            if isinstance(value, (me.fields.EmbeddedDocumentField, me.fields.GenericEmbeddedDocumentField)):
                 model_dict = model_dict | {key: cls._add_title(key, cls._parse_embedded_doc_field(value))}
+
             elif isinstance(value, me.fields.ListField):
                 model_dict = model_dict | {key: cls._add_title(key, cls._parse_list_field(value))}
-            elif isinstance(value, me.fields.ReferenceField):
-                model_dict = model_dict | {key: cls._add_title(key, cls._parse_reference_field(value))}
+
+            elif isinstance(value, me.base.GeoJsonBaseField):
+                model_dict = model_dict | {key: cls._add_title(key, cls._parse_geo_field(value))}
+
             elif isinstance(value, me.base.BaseField):
                 model_dict = model_dict | {key: cls._add_title(key, cls._parse_field(value))}
 
@@ -246,8 +365,8 @@ class JsonSchemaMixin:
             'type': 'object',
             'title': f'{cls._get_title(cls.__name__)}',
             'properties': model_properties,
-            'additionalProperties': True if issubclass(cls, me.document.DynamicDocument) or
-                                            issubclass(cls, me.document.DynamicEmbeddedDocument) else False
+            'additionalProperties': True if issubclass(cls, (me.document.DynamicDocument,
+                                                             me.document.DynamicEmbeddedDocument)) else False
         }
 
         if JsonSchemaMixin in cls.__bases__[0].__bases__:

@@ -1,2 +1,4 @@
 mongoengine
 pytest
+mongomock
+jsonschema
