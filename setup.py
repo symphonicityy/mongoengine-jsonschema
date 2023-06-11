@@ -9,6 +9,7 @@ with open('VERSION', 'r') as f:
 meta = {
     'version': VERSION,
     'doc': 'MongoEngine JSON Schema Generator',
+    'description': "This package provides a mixin class that extends a MongoEngine document's functionality by adding a .json_schema() method and allows generating a JSON schema directly from the document. Generated schema then can be used in API documentation or form validation and automatic form generation on a web application frontend, etc.",
     'author': 'Yusuf Eroglu',
     'contact': 'myusuferoglu@gmail.com',
     'homepage': "https://github.com/symphonicityy/mongoengine-jsonschema"
@@ -43,6 +44,7 @@ setuptools.setup(
     name=NAME,
     version=meta['version'],
     description=meta['doc'],
+    long_description=meta['description'],
     author=meta['author'],
     author_email=meta['contact'],
     url=meta['homepage'],
