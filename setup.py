@@ -50,7 +50,7 @@ setuptools.setup(
     license='MIT',
     platforms=['any'],
     install_requires=install_requires(),
-    packages=setuptools.find_packages(),
+    packages=['src/mongoengine_jsonschema'],
     python_requires=">=3.10",
     include_package_data=True,
     zip_safe=False,
