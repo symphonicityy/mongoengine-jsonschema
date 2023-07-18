@@ -354,6 +354,15 @@ class JsonSchemaMixin:
         """
 
         cls._STRICT = strict
+
+        try:
+            schema = getattr(cls, '_JSONSCHEMA')
+            if not cls._STRICT and 'required' in schema.keys():
+                del schema['required']
+            return schema
+        except AttributeError:
+            pass
+
         model_properties = cls._parse()
         required_list = []
         for k, v in model_properties.items():
