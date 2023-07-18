@@ -50,6 +50,16 @@ class ExampleDocumentInheritedNoMixinParent(ExampleBaseNoMixinDocument, JsonSche
     field = me.StringField()
 
 
+class ExampleDocumentWithCustomSchema(me.Document, JsonSchemaMixin):
+    _JSONSCHEMA = {
+        '$id': '/schemas/ExampleDocumentWithCustomSchema',
+        'type': 'object',
+        'title': 'Example Document With Custom Schema',
+        'properties': {},
+        'additionalProperties': False
+    }
+
+
 class ExampleDocument(me.Document, JsonSchemaMixin):
     binary_field = me.BinaryField()
     boolean_field = me.BooleanField(required=True)
@@ -174,6 +184,16 @@ class TestDocumentSchema:
     def test_not_strict(self):
         schema = ExampleDocument.json_schema(strict=False)
         assert 'required' not in schema.keys()
+
+    def test_custom_schema(self):
+        schema = ExampleDocumentWithCustomSchema.json_schema()
+        assert schema == {
+            '$id': '/schemas/ExampleDocumentWithCustomSchema',
+            'type': 'object',
+            'title': 'Example Document With Custom Schema',
+            'properties': {},
+            'additionalProperties': False
+        }
 
 
 class TestDocumentSchemaProps:
