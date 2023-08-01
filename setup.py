@@ -9,7 +9,7 @@ with open('VERSION', 'r') as f:
     VERSION = f.readline().strip('\n')
 
 this_directory = Path(__file__).parent
-DESCRIPTION = (this_directory / "README.md").read_text()
+DESCRIPTION = (this_directory / "README.md").read_text(encoding='utf8')
 
 meta = {
     'version': VERSION,
@@ -58,7 +58,7 @@ setuptools.setup(
     install_requires=install_requires(),
     package_dir={'': 'src'},
     packages=setuptools.find_packages('src'),
-    python_requires=">=3.10",
+    python_requires=">=3.8",
     include_package_data=True,
     zip_safe=False,
     project_urls={
